@@ -108,9 +108,7 @@ export type AllParts<Tools extends Record<string, Tool.Any>> =
   | ToolParamsDeltaPart
   | ToolParamsEndPart
   | ToolCallParts<Tools>
-  | AnyToolCallPart
   | ToolResultParts<Tools>
-  | AnyToolResultPart
   | ToolApprovalRequestPart
   | FilePart
   | DocumentSourcePart
@@ -148,9 +146,9 @@ export type AllPartsEncoded =
   | ErrorPartEncoded
 
 type ToolsFor<T> = T extends Toolkit.Any ? Toolkit.Tools<T> : Toolkit.WithHandlerTools<T>
-type AllPartsFor<T> = AllParts<ToolsFor<T>>
-type PartFor<T> = Part<ToolsFor<T>>
-type StreamPartFor<T> = StreamPart<ToolsFor<T>>
+type AllPartsFor<T> = AllParts<ToolsFor<T>> | AnyToolCallPart | AnyToolResultPart
+type PartFor<T> = Part<ToolsFor<T>> | AnyToolCallPart | AnyToolResultPart
+type StreamPartFor<T> = StreamPart<ToolsFor<T>> | AnyToolCallPart | AnyToolResultPart
 
 /**
  * Creates a Schema for all response parts based on a toolkit.
@@ -243,9 +241,7 @@ export type Part<
   | TextPart
   | ReasoningPart
   | ToolCallParts<Tools, EncodedToolParameters>
-  | AnyToolCallPart
   | ToolResultParts<Tools>
-  | AnyToolResultPart
   | ToolApprovalRequestPart
   | FilePart
   | DocumentSourcePart
@@ -337,9 +333,7 @@ export type StreamPart<
   | ToolParamsDeltaPart
   | ToolParamsEndPart
   | ToolCallParts<Tools, EncodedToolParameters>
-  | AnyToolCallPart
   | ToolResultParts<Tools>
-  | AnyToolResultPart
   | ToolApprovalRequestPart
   | FilePart
   | DocumentSourcePart

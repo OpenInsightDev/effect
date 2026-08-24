@@ -410,14 +410,14 @@ export class GenerateTextResponse<
   /**
    * Returns all tool call parts from the response.
    */
-  get toolCalls(): Array<Response.ToolCallParts<Tools, EncodedToolParameters> | Response.AnyToolCallPart> {
+  get toolCalls(): Array<Response.ToolCallParts<Tools, EncodedToolParameters>> {
     return this.content.filter((part) => part.type === "tool-call")
   }
 
   /**
    * Returns all tool result parts from the response.
    */
-  get toolResults(): Array<Response.ToolResultParts<Tools> | Response.AnyToolResultPart> {
+  get toolResults(): Array<Response.ToolResultParts<Tools>> {
     return this.content.filter((part) => part.type === "tool-result")
   }
 
@@ -1567,7 +1567,7 @@ export const make: (params: {
             if (part.type === "finish") {
               deferredFinishParts.push(part)
             } else {
-              immediateParts.push(part)
+              immediateParts.push(part as Response.StreamPart<Tools>)
             }
           }
           if (immediateParts.length > 0) {

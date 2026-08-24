@@ -15,9 +15,6 @@ const streamPart = Response.StreamPart(toolkit)
 
 describe("Response", () => {
   it("includes unrestricted tool parts in response models", () => {
-    expect<Response.AnyToolCallPart>().type.toBeAssignableTo<Response.AllParts<Tools>>()
-    expect<Response.AnyToolResultPart>().type.toBeAssignableTo<Response.Part<Tools>>()
-    expect<Response.AnyToolCallPart>().type.toBeAssignableTo<Response.StreamPart<Tools>>()
     expect<Response.AnyToolCallPart>().type.toBeAssignableTo<Schema.Schema.Type<typeof allParts>>()
     expect<Response.AnyToolResultPart>().type.toBeAssignableTo<Schema.Schema.Type<typeof part>>()
     expect<Response.AnyToolCallPart>().type.toBeAssignableTo<Schema.Schema.Type<typeof streamPart>>()
