@@ -223,4 +223,25 @@ describe("Response", () => {
 
       deepStrictEqual(Exit.isFailure(exit), true)
     }))
+
+  it.effect("keeps toolkit-specific validation for known tool results", () =>
+    Effect.gen(function*() {
+      const toolkit = Toolkit.make(
+        Tool.make("KnownTool", {
+          parameters: Schema.Struct({ value: Schema.Number }),
+          success: Schema.Struct({ ok: Schema.Boolean })
+        })
+      )
+      const exit = yield* Effect.exit(
+        Schema.decodeUnknownEffect(Response.Part(toolkit))({
+          type: "tool-result",
+          id: "call_known",
+          name: "KnownTool",
+          isFailure: false,
+          result: { ok: "not-a-boolean" }
+        })
+      )
+
+      deepStrictEqual(Exit.isFailure(exit), true)
+    }))
 })

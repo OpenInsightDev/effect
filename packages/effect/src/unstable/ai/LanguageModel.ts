@@ -410,14 +410,14 @@ export class GenerateTextResponse<
   /**
    * Returns all tool call parts from the response.
    */
-  get toolCalls(): Array<Response.ToolCallParts<Tools, EncodedToolParameters>> {
+  get toolCalls(): Array<Response.ToolCallParts<Tools, EncodedToolParameters> | Response.AnyToolCallPart> {
     return this.content.filter((part) => part.type === "tool-call")
   }
 
   /**
    * Returns all tool result parts from the response.
    */
-  get toolResults(): Array<Response.ToolResultParts<Tools>> {
+  get toolResults(): Array<Response.ToolResultParts<Tools> | Response.AnyToolResultPart> {
     return this.content.filter((part) => part.type === "tool-result")
   }
 

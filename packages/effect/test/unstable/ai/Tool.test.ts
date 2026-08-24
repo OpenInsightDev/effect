@@ -572,7 +572,9 @@ describe("Tool", () => {
           })
 
           const latch = yield* Latch.make()
-          const toolResults: Array<Response.ToolResultParts<Toolkit.Tools<typeof toolkit>>> = []
+          const toolResults: Array<
+            Response.ToolResultParts<Toolkit.Tools<typeof toolkit>> | Response.AnyToolResultPart
+          > = []
 
           const fiber = yield* LanguageModel.streamText({
             prompt: "Test",
@@ -1291,7 +1293,10 @@ describe("Dynamic", () => {
         )
 
         const toolResult = response.toolResults[0]
-        deepStrictEqual(toolResult.result.timestamp, DateTime.makeUnsafe(new Date(1000)))
+        deepStrictEqual(
+          (toolResult.result as { readonly timestamp: DateTime.Utc }).timestamp,
+          DateTime.makeUnsafe(new Date(1000))
+        )
       }))
   })
 

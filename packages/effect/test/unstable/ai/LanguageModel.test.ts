@@ -95,7 +95,7 @@ describe("LanguageModel", () => {
         strictEqual(toolCall.params, "21")
 
         const toolkit = yield* TransformToolkit
-        const results = yield* toolkit.handle(toolCall.name, toolCall.params).pipe(
+        const results = yield* toolkit.handle(toolCall.name as "TransformTool", toolCall.params as string).pipe(
           Effect.flatMap(Stream.runCollect)
         )
 
@@ -149,7 +149,7 @@ describe("LanguageModel", () => {
         strictEqual(toolCall.params, "21")
 
         const toolkit = yield* TransformToolkit
-        const results = yield* toolkit.handle(toolCall.name, toolCall.params).pipe(
+        const results = yield* toolkit.handle(toolCall.name as "TransformTool", toolCall.params as string).pipe(
           Effect.flatMap(Stream.runCollect)
         )
 

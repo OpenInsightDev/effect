@@ -923,7 +923,7 @@ describe("OpenAiLanguageModel", () => {
           assert.isDefined(toolResult)
           if (toolResult?.type === "tool-result") {
             strictEqual(toolResult.name, "OpenAiMcp")
-            strictEqual(toolResult.result.name, "CheckPackage")
+            strictEqual((toolResult.result as { readonly name: string }).name, "CheckPackage")
           }
         }).pipe(Effect.provide(makeTestLayer({
           body: {
@@ -1477,7 +1477,7 @@ describe("OpenAiLanguageModel", () => {
         assert.isDefined(toolResult)
         if (toolResult?.type === "tool-result") {
           strictEqual(toolResult.name, "OpenAiMcp")
-          strictEqual(toolResult.result.name, "CheckPackage")
+          strictEqual((toolResult.result as { readonly name: string }).name, "CheckPackage")
         }
       }))
 
