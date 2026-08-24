@@ -1,7 +1,10 @@
 import { describe, it } from "@effect/vitest"
 import { deepStrictEqual } from "@effect/vitest/utils"
-import { Effect, Schema } from "effect"
-import { Response } from "effect/unstable/ai"
+import { Effect, Exit, Schema } from "effect"
+import { Response, Tool, Toolkit } from "effect/unstable/ai"
+
+const decode = (schema: Schema.Codec<any, any>, value: unknown) =>
+  Schema.decodeUnknownEffect(schema)(value) as Effect.Effect<unknown, Schema.SchemaError>
 
 describe("Response", () => {
   it.effect("decodes response metadata with omitted optional fields", () =>
@@ -107,5 +110,117 @@ describe("Response", () => {
         }),
         "decoded part"
       )
+    }))
+
+  it.effect("decodes a tool call for a tool outside the toolkit", () =>
+    Effect.gen(function*() {
+      const decoded = yield* Schema.decodeUnknownEffect(Response.AnyToolCallPart)({
+        type: "tool-call",
+        id: "call_unknown",
+        name: "UnknownTool",
+        params: { value: 1 }
+      })
+
+      deepStrictEqual(
+        decoded,
+        Response.makePart("tool-call", {
+          id: "call_unknown",
+          name: "UnknownTool",
+          params: { value: 1 },
+          providerExecuted: false
+        })
+      )
+    }))
+
+  it.effect("decodes a tool result for a tool outside the toolkit", () =>
+    Effect.gen(function*() {
+      const decoded = yield* Schema.decodeUnknownEffect(Response.AnyToolResultPart)({
+        type: "tool-result",
+        id: "call_unknown",
+        name: "UnknownTool",
+        isFailure: false,
+        result: { value: 1 }
+      })
+
+      deepStrictEqual(
+        decoded,
+        Response.makePart("tool-result", {
+          id: "call_unknown",
+          name: "UnknownTool",
+          isFailure: false,
+          result: { value: 1 },
+          encodedResult: { value: 1 },
+          providerExecuted: false,
+          preliminary: false
+        })
+      )
+    }))
+
+  it.effect("supports any tool calls and results with an empty toolkit", () =>
+    Effect.gen(function*() {
+      const toolCall = {
+        type: "tool-call",
+        id: "call_unknown",
+        name: "UnknownTool",
+        params: { value: 1 }
+      } as const
+      const toolResult = {
+        type: "tool-result",
+        id: "call_unknown",
+        name: "UnknownTool",
+        isFailure: false,
+        result: { value: 1 }
+      } as const
+
+      for (
+        const schema of [
+          Response.AllParts(Toolkit.empty),
+          Response.Part(Toolkit.empty),
+          Response.StreamPart(Toolkit.empty)
+        ]
+      ) {
+        yield* decode(schema, toolCall)
+        yield* decode(schema, toolResult)
+      }
+    }))
+
+  it.effect("supports unknown tools alongside toolkit-specific schemas", () =>
+    Effect.gen(function*() {
+      const toolkit = Toolkit.make(
+        Tool.make("KnownTool", {
+          parameters: Schema.Struct({ value: Schema.Number }),
+          success: Schema.Struct({ ok: Schema.Boolean })
+        })
+      )
+      const unknown = {
+        type: "tool-call",
+        id: "call_unknown",
+        name: "UnknownTool",
+        params: { value: 1 }
+      }
+
+      for (const schema of [Response.AllParts(toolkit), Response.Part(toolkit), Response.StreamPart(toolkit)]) {
+        yield* decode(schema, unknown)
+      }
+    }))
+
+  it.effect("keeps toolkit-specific validation for known tools", () =>
+    Effect.gen(function*() {
+      const toolkit = Toolkit.make(
+        Tool.make("KnownTool", {
+          parameters: Schema.Struct({ value: Schema.Number }),
+          success: Schema.Struct({ ok: Schema.Boolean })
+        })
+      )
+      const exit = yield* Effect.exit(
+        Schema.decodeUnknownEffect(Response.Part(toolkit))({
+          type: "tool-call",
+          id: "call_known",
+          name: "KnownTool",
+          params: { value: "not-a-number" }
+        })
+      )
+
+      deepStrictEqual(Exit.isFailure(exit), true)
     }))
 })
