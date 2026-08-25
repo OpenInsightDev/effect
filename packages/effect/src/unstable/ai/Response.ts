@@ -226,7 +226,7 @@ export const AllParts = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
  * @category models
  * @since 4.0.0
  */
-export type AnyAllParts<Tools extends Record<string, Tool.Any>> =
+export type AllPartsView<Tools extends Record<string, Tool.Any>> =
   | AllParts<Tools>
   | AnyToolCallPart
   | AnyToolResultPart
@@ -244,10 +244,10 @@ export type AnyAllParts<Tools extends Record<string, Tool.Any>> =
  * @category schemas
  * @since 4.0.0
  */
-export const AnyAllParts = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
+export const AllPartsView = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
   toolkit: T
 ): Schema.Codec<
-  AnyAllParts<T extends Toolkit.Any ? Toolkit.Tools<T> : Toolkit.WithHandlerTools<T>>,
+  AllPartsView<T extends Toolkit.Any ? Toolkit.Tools<T> : Toolkit.WithHandlerTools<T>>,
   AllPartsEncoded,
   Tool.ResultDecodingServices<Toolkit.Tools<T>[keyof Toolkit.Tools<T>]>,
   Tool.ResultEncodingServices<Toolkit.Tools<T>[keyof Toolkit.Tools<T>]>
@@ -336,6 +336,27 @@ export const Part = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
 }
 
 /**
+ * Union type for non-streaming response parts that also accepts tools outside
+ * the provided toolkit.
+ *
+ * **When to use**
+ *
+ * Use when a non-streaming response may contain tool calls or results that are
+ * not known by the current toolkit.
+ *
+ * @see {@link Part} for toolkit-specific non-streaming response parts.
+ * @category models
+ * @since 4.0.0
+ */
+export type PartView<
+  Tools extends Record<string, Tool.Any>,
+  EncodedToolParameters extends boolean = false
+> =
+  | Part<Tools, EncodedToolParameters>
+  | AnyToolCallPart
+  | AnyToolResultPart
+
+/**
  * Creates a Schema for non-streaming response parts, including tools outside
  * the provided toolkit.
  *
@@ -348,12 +369,10 @@ export const Part = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
  * @category schemas
  * @since 4.0.0
  */
-export const AnyPart = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
+export const PartView = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
   toolkit: T
 ): Schema.Codec<
-  | Part<T extends Toolkit.Any ? Toolkit.Tools<T> : Toolkit.WithHandlerTools<T>>
-  | AnyToolCallPart
-  | AnyToolResultPart,
+  PartView<T extends Toolkit.Any ? Toolkit.Tools<T> : Toolkit.WithHandlerTools<T>>,
   PartEncoded,
   Tool.ResultDecodingServices<Toolkit.Tools<T>[keyof Toolkit.Tools<T>]>,
   Tool.ResultEncodingServices<Toolkit.Tools<T>[keyof Toolkit.Tools<T>]>
@@ -475,7 +494,7 @@ export const StreamPart = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
  * @category models
  * @since 4.0.0
  */
-export type AnyStreamPart<
+export type StreamPartView<
   Tools extends Record<string, Tool.Any>,
   EncodedToolParameters extends boolean = false
 > =
@@ -495,10 +514,10 @@ export type AnyStreamPart<
  * @category schemas
  * @since 4.0.0
  */
-export const AnyStreamPart = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
+export const StreamPartView = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
   toolkit: T
 ): Schema.Codec<
-  AnyStreamPart<T extends Toolkit.Any ? Toolkit.Tools<T> : Toolkit.WithHandlerTools<T>>,
+  StreamPartView<T extends Toolkit.Any ? Toolkit.Tools<T> : Toolkit.WithHandlerTools<T>>,
   StreamPartEncoded,
   Tool.ResultDecodingServices<Toolkit.Tools<T>[keyof Toolkit.Tools<T>]>,
   Tool.ResultEncodingServices<Toolkit.Tools<T>[keyof Toolkit.Tools<T>]>

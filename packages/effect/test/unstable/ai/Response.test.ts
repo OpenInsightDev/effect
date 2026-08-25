@@ -147,7 +147,7 @@ describe("Response", () => {
       } as const
 
       for (
-        const schema of [Response.AnyAllParts(toolkit), Response.AnyPart(toolkit), Response.AnyStreamPart(toolkit)]
+        const schema of [Response.AllPartsView(toolkit), Response.PartView(toolkit), Response.StreamPartView(toolkit)]
       ) {
         const decodedCall = yield* Schema.decodeUnknownEffect(schema)(toolCall)
         const decodedResult = yield* Schema.decodeUnknownEffect(schema)(toolResult)
@@ -183,7 +183,7 @@ describe("Response", () => {
       } as const
 
       for (
-        const schema of [Response.AnyAllParts(toolkit), Response.AnyPart(toolkit), Response.AnyStreamPart(toolkit)]
+        const schema of [Response.AllPartsView(toolkit), Response.PartView(toolkit), Response.StreamPartView(toolkit)]
       ) {
         deepStrictEqual(Exit.isFailure(yield* Effect.exit(Schema.decodeUnknownEffect(schema)(invalidToolCall))), true)
         deepStrictEqual(Exit.isFailure(yield* Effect.exit(Schema.decodeUnknownEffect(schema)(invalidToolResult))), true)

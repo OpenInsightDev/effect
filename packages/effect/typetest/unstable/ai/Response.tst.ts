@@ -24,12 +24,13 @@ describe("Response", () => {
   })
 
   it("adds unrestricted tools only to any response types", () => {
-    const allParts = Response.AnyAllParts(toolkit)
-    const part = Response.AnyPart(toolkit)
-    const streamPart = Response.AnyStreamPart(toolkit)
+    const allParts = Response.AllPartsView(toolkit)
+    const part = Response.PartView(toolkit)
+    const streamPart = Response.StreamPartView(toolkit)
 
-    expect<Response.AnyToolCallPart>().type.toBeAssignableTo<Response.AnyAllParts<Tools>>()
-    expect<Response.AnyToolResultPart>().type.toBeAssignableTo<Response.AnyStreamPart<Tools>>()
+    expect<Response.AnyToolCallPart>().type.toBeAssignableTo<Response.AllPartsView<Tools>>()
+    expect<Response.AnyToolResultPart>().type.toBeAssignableTo<Response.PartView<Tools>>()
+    expect<Response.AnyToolResultPart>().type.toBeAssignableTo<Response.StreamPartView<Tools>>()
     expect<Response.AnyToolCallPart>().type.toBeAssignableTo<Schema.Schema.Type<typeof allParts>>()
     expect<Response.AnyToolResultPart>().type.toBeAssignableTo<Schema.Schema.Type<typeof part>>()
     expect<Response.AnyToolCallPart>().type.toBeAssignableTo<Schema.Schema.Type<typeof streamPart>>()
