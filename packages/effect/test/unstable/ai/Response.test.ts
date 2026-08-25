@@ -5,6 +5,8 @@ import { Response, Tool, Toolkit } from "effect/unstable/ai"
 
 const decode = (schema: Schema.Codec<any, any>, value: unknown) =>
   Schema.decodeUnknownEffect(schema)(value) as Effect.Effect<unknown, Schema.SchemaError>
+const encode = (schema: Schema.Codec<any, any>, value: unknown) =>
+  Schema.encodeEffect(schema)(value) as Effect.Effect<unknown, Schema.SchemaError>
 
 describe("Response", () => {
   it.effect("decodes response metadata with omitted optional fields", () =>
@@ -179,8 +181,20 @@ describe("Response", () => {
           Response.StreamPart(Toolkit.empty)
         ]
       ) {
-        yield* decode(schema, toolCall)
-        yield* decode(schema, toolResult)
+        const decodedToolCall = yield* decode(schema, toolCall)
+        const decodedToolResult = yield* decode(schema, toolResult)
+
+        deepStrictEqual(yield* encode(schema, decodedToolCall), {
+          ...toolCall,
+          providerExecuted: false,
+          metadata: {}
+        })
+        deepStrictEqual(yield* encode(schema, decodedToolResult), {
+          ...toolResult,
+          providerExecuted: false,
+          metadata: {},
+          preliminary: false
+        })
       }
     }))
 
