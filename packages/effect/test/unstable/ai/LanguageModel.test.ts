@@ -1,6 +1,6 @@
 import { describe, it } from "@effect/vitest"
 import { assertDefined, assertTrue, deepStrictEqual, strictEqual } from "@effect/vitest/utils"
-import { Effect, Exit, Fiber, Latch, Option, Ref, Schema, Stream } from "effect"
+import { Effect, Fiber, Latch, Option, Ref, Schema, Stream } from "effect"
 import { TestClock } from "effect/testing"
 import { AiError, LanguageModel, Prompt, Response, ResponseIdTracker, Tool, Toolkit } from "effect/unstable/ai"
 import * as TestUtils from "./utils.ts"
@@ -61,25 +61,6 @@ describe("LanguageModel", () => {
   }
 
   describe("generateText", () => {
-    it.effect("dies when the provider returns an unknown tool", () =>
-      Effect.gen(function*() {
-        const exit = yield* LanguageModel.generateText({
-          prompt: []
-        }).pipe(
-          TestUtils.withLanguageModel({
-            generateText: [{
-              type: "tool-call",
-              id: "unknown-tool",
-              name: "UnknownTool",
-              params: {}
-            }]
-          }),
-          Effect.exit
-        )
-
-        assertTrue(Exit.hasDies(exit))
-      }))
-
     it.effect("validates encoded tool parameters when tool call resolution is disabled", () =>
       Effect.gen(function*() {
         const error = yield* LanguageModel.generateText({
@@ -133,28 +114,6 @@ describe("LanguageModel", () => {
   })
 
   describe("streamText", () => {
-    it.effect("dies when the provider returns an unknown tool", () =>
-      Effect.gen(function*() {
-        const exit = yield* LanguageModel.streamText({
-          prompt: [],
-          toolkit: MyToolkit
-        }).pipe(
-          Stream.runDrain,
-          TestUtils.withLanguageModel({
-            streamText: [{
-              type: "tool-call",
-              id: "unknown-tool",
-              name: "UnknownTool",
-              params: {}
-            }]
-          }),
-          Effect.provide(MyToolkitLayer),
-          Effect.exit
-        )
-
-        assertTrue(Exit.hasDies(exit))
-      }))
-
     it.effect("validates encoded tool parameters when tool call resolution is disabled", () =>
       Effect.gen(function*() {
         const error = yield* LanguageModel.streamText({

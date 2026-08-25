@@ -145,19 +145,13 @@ export type AllPartsEncoded =
   | FinishPartEncoded
   | ErrorPartEncoded
 
-type ToolsFor<T> = T extends Toolkit.Any ? Toolkit.Tools<T> : Toolkit.WithHandlerTools<T>
-type AllPartsFor<T> = AllParts<ToolsFor<T>> | AnyToolCallPart | AnyToolResultPart
-type PartFor<T> = Part<ToolsFor<T>> | AnyToolCallPart | AnyToolResultPart
-type StreamPartFor<T> = StreamPart<ToolsFor<T>> | AnyToolCallPart | AnyToolResultPart
-
 /**
  * Creates a Schema for all response parts based on a toolkit.
  *
  * **Details**
  *
  * Generates a schema that includes all possible response parts, with tool call
- * and tool result parts dynamically created based on the provided toolkit. The
- * schema also accepts unrestricted tool calls and results.
+ * and tool result parts dynamically created based on the provided toolkit.
  *
  * **Example** (Building a response parts schema)
  *
@@ -182,16 +176,14 @@ type StreamPartFor<T> = StreamPart<ToolsFor<T>> | AnyToolCallPart | AnyToolResul
 export const AllParts = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
   toolkit: T
 ): Schema.Codec<
-  AllPartsFor<T>,
+  AllParts<T extends Toolkit.Any ? Toolkit.Tools<T> : Toolkit.WithHandlerTools<T>>,
   AllPartsEncoded,
-  Tool.ResultDecodingServicesFor<ToolsFor<T>>,
-  Tool.ResultEncodingServicesFor<ToolsFor<T>>
+  Tool.ResultDecodingServices<Toolkit.Tools<T>[keyof Toolkit.Tools<T>]>,
+  Tool.ResultEncodingServices<Toolkit.Tools<T>[keyof Toolkit.Tools<T>]>
 > => {
   const toolCalls: Array<Schema.Top> = []
   const toolResults: Array<Schema.Top> = []
-  const toolNames = new Set<string>()
   for (const tool of Object.values(toolkit.tools as Record<string, Tool.Any>)) {
-    toolNames.add(tool.name)
     const toolCall = ToolCallPart(tool.name, tool.parametersSchema)
     const toolResult = ToolResultPart(tool.name, tool.successSchema, tool.failureSchema)
     toolCalls.push(toolCall)
@@ -217,11 +209,49 @@ export const AllParts = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
     FinishPart,
     ErrorPart,
     ...toolCalls,
-    ...toolResults,
-    unknownToolPart(AnyToolCallPart, toolNames),
-    unknownToolPart(AnyToolResultPart, toolNames)
+    ...toolResults
   ]) as any
 }
+
+/**
+ * Union type for all response parts that also accepts tools outside the
+ * provided toolkit.
+ *
+ * **When to use**
+ *
+ * Use when response data may contain tool calls or results that are not known
+ * by the current toolkit.
+ *
+ * @see {@link AllParts} for toolkit-specific response parts.
+ * @category models
+ * @since 4.0.0
+ */
+export type AnyAllParts<Tools extends Record<string, Tool.Any>> =
+  | AllParts<Tools>
+  | AnyToolCallPart
+  | AnyToolResultPart
+
+/**
+ * Creates a Schema for all response parts, including tools outside the
+ * provided toolkit.
+ *
+ * **When to use**
+ *
+ * Use when decoding complete or streaming response data before all possible
+ * tools are known.
+ *
+ * @see {@link AllParts} for a Schema restricted to the provided toolkit.
+ * @category schemas
+ * @since 4.0.0
+ */
+export const AnyAllParts = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
+  toolkit: T
+): Schema.Codec<
+  AnyAllParts<T extends Toolkit.Any ? Toolkit.Tools<T> : Toolkit.WithHandlerTools<T>>,
+  AllPartsEncoded,
+  Tool.ResultDecodingServices<Toolkit.Tools<T>[keyof Toolkit.Tools<T>]>,
+  Tool.ResultEncodingServices<Toolkit.Tools<T>[keyof Toolkit.Tools<T>]>
+> => withAnyToolParts(AllParts(toolkit), toolkit) as any
 
 // =============================================================================
 // Parts
@@ -278,16 +308,14 @@ export type PartEncoded =
 export const Part = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
   toolkit: T
 ): Schema.Codec<
-  PartFor<T>,
+  Part<T extends Toolkit.Any ? Toolkit.Tools<T> : Toolkit.WithHandlerTools<T>>,
   PartEncoded,
-  Tool.ResultDecodingServicesFor<ToolsFor<T>>,
-  Tool.ResultEncodingServicesFor<ToolsFor<T>>
+  Tool.ResultDecodingServices<Toolkit.Tools<T>[keyof Toolkit.Tools<T>]>,
+  Tool.ResultEncodingServices<Toolkit.Tools<T>[keyof Toolkit.Tools<T>]>
 > => {
   const toolCalls: Array<Schema.Top> = []
   const toolResults: Array<Schema.Top> = []
-  const toolNames = new Set<string>()
   for (const tool of Object.values(toolkit.tools as Record<string, Tool.Any>)) {
-    toolNames.add(tool.name)
     const toolCall = ToolCallPart(tool.name, tool.parametersSchema)
     const toolResult = ToolResultPart(tool.name, tool.successSchema, tool.failureSchema)
     toolCalls.push(toolCall)
@@ -303,11 +331,33 @@ export const Part = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
     ResponseMetadataPart,
     FinishPart,
     ...toolCalls,
-    ...toolResults,
-    unknownToolPart(AnyToolCallPart, toolNames),
-    unknownToolPart(AnyToolResultPart, toolNames)
+    ...toolResults
   ]) as any
 }
+
+/**
+ * Creates a Schema for non-streaming response parts, including tools outside
+ * the provided toolkit.
+ *
+ * **When to use**
+ *
+ * Use when decoding a non-streaming response before all possible tools are
+ * known.
+ *
+ * @see {@link Part} for a Schema restricted to the provided toolkit.
+ * @category schemas
+ * @since 4.0.0
+ */
+export const AnyPart = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
+  toolkit: T
+): Schema.Codec<
+  | Part<T extends Toolkit.Any ? Toolkit.Tools<T> : Toolkit.WithHandlerTools<T>>
+  | AnyToolCallPart
+  | AnyToolResultPart,
+  PartEncoded,
+  Tool.ResultDecodingServices<Toolkit.Tools<T>[keyof Toolkit.Tools<T>]>,
+  Tool.ResultEncodingServices<Toolkit.Tools<T>[keyof Toolkit.Tools<T>]>
+> => withAnyToolParts(Part(toolkit), toolkit) as any
 
 // =============================================================================
 // Stream Parts
@@ -377,16 +427,14 @@ export type StreamPartEncoded =
 export const StreamPart = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
   toolkit: T
 ): Schema.Codec<
-  StreamPartFor<T>,
+  StreamPart<T extends Toolkit.Any ? Toolkit.Tools<T> : Toolkit.WithHandlerTools<T>>,
   StreamPartEncoded,
-  Tool.ResultDecodingServicesFor<ToolsFor<T>>,
-  Tool.ResultEncodingServicesFor<ToolsFor<T>>
+  Tool.ResultDecodingServices<Toolkit.Tools<T>[keyof Toolkit.Tools<T>]>,
+  Tool.ResultEncodingServices<Toolkit.Tools<T>[keyof Toolkit.Tools<T>]>
 > => {
   const toolCalls: Array<Schema.Top> = []
   const toolResults: Array<Schema.Top> = []
-  const toolNames = new Set<string>()
   for (const tool of Object.values(toolkit.tools as Record<string, Tool.Any>)) {
-    toolNames.add(tool.name)
     const toolCall = ToolCallPart(tool.name, tool.parametersSchema)
     const toolResult = ToolResultPart(tool.name, tool.successSchema, tool.failureSchema)
     toolCalls.push(toolCall)
@@ -410,11 +458,51 @@ export const StreamPart = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
     FinishPart,
     ErrorPart,
     ...toolCalls,
-    ...toolResults,
-    unknownToolPart(AnyToolCallPart, toolNames),
-    unknownToolPart(AnyToolResultPart, toolNames)
+    ...toolResults
   ]) as any
 }
+
+/**
+ * Union type for streaming response parts that also accepts tools outside the
+ * provided toolkit.
+ *
+ * **When to use**
+ *
+ * Use when a response stream may contain tool calls or results that are not
+ * known by the current toolkit.
+ *
+ * @see {@link StreamPart} for toolkit-specific streaming response parts.
+ * @category models
+ * @since 4.0.0
+ */
+export type AnyStreamPart<
+  Tools extends Record<string, Tool.Any>,
+  EncodedToolParameters extends boolean = false
+> =
+  | StreamPart<Tools, EncodedToolParameters>
+  | AnyToolCallPart
+  | AnyToolResultPart
+
+/**
+ * Creates a Schema for streaming response parts, including tools outside the
+ * provided toolkit.
+ *
+ * **When to use**
+ *
+ * Use when decoding a response stream before all possible tools are known.
+ *
+ * @see {@link StreamPart} for a Schema restricted to the provided toolkit.
+ * @category schemas
+ * @since 4.0.0
+ */
+export const AnyStreamPart = <T extends Toolkit.Any | Toolkit.WithHandler<any>>(
+  toolkit: T
+): Schema.Codec<
+  AnyStreamPart<T extends Toolkit.Any ? Toolkit.Tools<T> : Toolkit.WithHandlerTools<T>>,
+  StreamPartEncoded,
+  Tool.ResultDecodingServices<Toolkit.Tools<T>[keyof Toolkit.Tools<T>]>,
+  Tool.ResultEncodingServices<Toolkit.Tools<T>[keyof Toolkit.Tools<T>]>
+> => withAnyToolParts(StreamPart(toolkit), toolkit) as any
 
 // =============================================================================
 // utility types
@@ -1457,7 +1545,7 @@ export const toolCallPart = <const Name extends string, Params>(
 ): ToolCallPart<Name, Params> => makePart("tool-call", params)
 
 /**
- * A tool call part whose name and parameters are not restricted by a toolkit.
+ * Tool call part whose name and parameters are not restricted by a toolkit.
  *
  * @category models
  * @since 4.0.0
@@ -1465,8 +1553,8 @@ export const toolCallPart = <const Name extends string, Params>(
 export type AnyToolCallPart = ToolCallPart<string, unknown>
 
 /**
- * Schema for decoding tool calls without a toolkit-specific tool name or
- * parameter schema.
+ * Schema for a tool call whose name and parameters are not restricted by a
+ * toolkit.
  *
  * @category schemas
  * @since 4.0.0
@@ -1778,7 +1866,7 @@ export const toolResultPart = <const Params extends ConstructorParams<ToolResult
   : never => makePart("tool-result", params) as any
 
 /**
- * A tool result part whose name and result are not restricted by a toolkit.
+ * Tool result part whose name and result are not restricted by a toolkit.
  *
  * @category models
  * @since 4.0.0
@@ -1786,14 +1874,13 @@ export const toolResultPart = <const Params extends ConstructorParams<ToolResult
 export type AnyToolResultPart = ToolResultPart<string, unknown, unknown>
 
 /**
- * Schema for decoding tool results without a toolkit-specific tool name or
- * result schema.
+ * Schema for a tool result whose name and result are not restricted by a
+ * toolkit.
  *
  * @category schemas
  * @since 4.0.0
  */
 export const AnyToolResultPart: Schema.Codec<AnyToolResultPart, ToolResultPartEncoded> = (() => {
-  const ResultSchema = Schema.Unknown
   const Common = {
     id: Schema.String,
     type: Schema.Literal("tool-result"),
@@ -1803,15 +1890,15 @@ export const AnyToolResultPart: Schema.Codec<AnyToolResultPart, ToolResultPartEn
   const Decoded = Schema.Struct({
     ...Common,
     [PartTypeId]: Schema.Literal(PartTypeId),
-    result: ResultSchema,
+    result: Schema.Unknown,
     providerExecuted: Schema.Boolean,
     metadata: ProviderMetadata,
-    encodedResult: ResultSchema,
+    encodedResult: Schema.Unknown,
     preliminary: Schema.Boolean
   })
   const Encoded = Schema.Struct({
     ...Common,
-    result: ResultSchema,
+    result: Schema.Unknown,
     providerExecuted: Schema.optional(Schema.Boolean),
     metadata: Schema.optional(ProviderMetadata),
     preliminary: Schema.optional(Schema.Boolean)
@@ -1832,14 +1919,21 @@ export const AnyToolResultPart: Schema.Codec<AnyToolResultPart, ToolResultPartEn
   )).annotate({ identifier: "AnyToolResultPart" }) as any
 })()
 
-const unknownToolPart = <S extends Schema.Top>(schema: S, toolNames: ReadonlySet<string>): S =>
-  toolNames.size === 0
-    ? schema
-    : schema.pipe(Schema.check(Schema.makeFilter((part: S["Type"]) =>
-      toolNames.has((part as { readonly name: string }).name)
-        ? "tool name is already defined in the toolkit"
-        : undefined
-    ))) as S
+const withAnyToolParts = (
+  schema: Schema.Top,
+  toolkit: Toolkit.Any | Toolkit.WithHandler<any>
+): Schema.Top => {
+  const toolNames = new Set(Object.values(toolkit.tools as Record<string, Tool.Any>).map((tool) => tool.name))
+  const unknownTool = <S extends Schema.Top>(part: S): S =>
+    toolNames.size === 0
+      ? part
+      : part.pipe(Schema.check(Schema.makeFilter((value: S["Type"]) =>
+        toolNames.has((value as { readonly name: string }).name)
+          ? "tool name is already defined in the toolkit"
+          : undefined
+      ))) as S
+  return Schema.Union([schema, unknownTool(AnyToolCallPart), unknownTool(AnyToolResultPart)])
+}
 
 // =============================================================================
 // Tool Approval Request Part

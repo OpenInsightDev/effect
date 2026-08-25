@@ -9,25 +9,29 @@ const KnownTool = Tool.make("KnownTool", {
 
 const toolkit = Toolkit.make(KnownTool)
 type Tools = Toolkit.Tools<typeof toolkit>
-const allParts = Response.AllParts(toolkit)
-const part = Response.Part(toolkit)
-const streamPart = Response.StreamPart(toolkit)
 
 describe("Response", () => {
-  it("includes unrestricted tool parts in response models", () => {
+  it("keeps toolkit-specific response types unchanged", () => {
+    expect<Schema.Schema.Type<ReturnType<typeof Response.AllParts<typeof toolkit>>>>().type.toBe<
+      Response.AllParts<Tools>
+    >()
+    expect<Schema.Schema.Type<ReturnType<typeof Response.Part<typeof toolkit>>>>().type.toBe<Response.Part<Tools>>()
+    expect<Schema.Schema.Type<ReturnType<typeof Response.StreamPart<typeof toolkit>>>>().type.toBe<
+      Response.StreamPart<Tools>
+    >()
+    expect<Response.AnyToolCallPart>().type.not.toBeAssignableTo<Response.Part<Tools>>()
+    expect<Response.AnyToolResultPart>().type.not.toBeAssignableTo<Response.StreamPart<Tools>>()
+  })
+
+  it("adds unrestricted tools only to any response types", () => {
+    const allParts = Response.AnyAllParts(toolkit)
+    const part = Response.AnyPart(toolkit)
+    const streamPart = Response.AnyStreamPart(toolkit)
+
+    expect<Response.AnyToolCallPart>().type.toBeAssignableTo<Response.AnyAllParts<Tools>>()
+    expect<Response.AnyToolResultPart>().type.toBeAssignableTo<Response.AnyStreamPart<Tools>>()
     expect<Response.AnyToolCallPart>().type.toBeAssignableTo<Schema.Schema.Type<typeof allParts>>()
     expect<Response.AnyToolResultPart>().type.toBeAssignableTo<Schema.Schema.Type<typeof part>>()
     expect<Response.AnyToolCallPart>().type.toBeAssignableTo<Schema.Schema.Type<typeof streamPart>>()
-  })
-
-  it("provides result service aliases for tool records", () => {
-    expect(part).type.toBeAssignableTo<
-      Schema.Codec<
-        Schema.Schema.Type<typeof part>,
-        Schema.Codec.Encoded<typeof part>,
-        Tool.ResultDecodingServicesFor<Tools>,
-        Tool.ResultEncodingServicesFor<Tools>
-      >
-    >()
   })
 })

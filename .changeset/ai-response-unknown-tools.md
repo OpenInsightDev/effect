@@ -2,4 +2,4 @@
 "effect": minor
 ---
 
-Allow response part schemas to decode tool calls and results that are not present in the provided toolkit.
+Add `Response.AnyAllParts`, `Response.AnyPart`, and `Response.AnyStreamPart` schemas for decoding tool calls and results that are not present in the provided toolkit.

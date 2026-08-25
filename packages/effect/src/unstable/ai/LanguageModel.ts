@@ -1073,7 +1073,6 @@ export const make: (params: {
         Schema.Array(Response.Part(Toolkit.empty))
       )
       const rawContent = yield* generateWithNonIncrementalFallback()
-      yield* dieOnUnknownTools(rawContent, new Set())
       const content = yield* Schema.decodeEffect(ResponseSchema)(rawContent)
       if (tracker) {
         const responseMetadata = content.find((part) => part.type === "response-metadata")
@@ -1112,7 +1111,6 @@ export const make: (params: {
         Schema.Array(Response.Part(Toolkit.empty))
       )
       const rawContent = yield* generateWithNonIncrementalFallback()
-      yield* dieOnUnknownTools(rawContent, new Set())
       const content = yield* Schema.decodeEffect(ResponseSchema)(rawContent)
       if (tracker) {
         const responseMetadata = content.find((part) => part.type === "response-metadata")
@@ -1188,13 +1186,11 @@ export const make: (params: {
     const ResponseSchema = Schema.mutable(Schema.Array(Response.Part(
       options.disableToolCallResolution === true ? makeToolkitWithEncodedParameters(toolkit) : toolkit
     )))
-    const toolNames = new Set(Object.values(toolkit.tools).map((tool) => tool.name))
 
     // If tool call resolution is disabled, return the response without
     // resolving the tool calls that were generated
     if (options.disableToolCallResolution === true) {
       const rawContent = yield* generateWithNonIncrementalFallback()
-      yield* dieOnUnknownTools(rawContent, toolNames)
       const content = yield* Schema.decodeEffect(ResponseSchema)(rawContent)
       if (tracker) {
         const responseMetadata = content.find((part) => part.type === "response-metadata")
@@ -1206,8 +1202,6 @@ export const make: (params: {
     }
 
     const rawContent = yield* generateWithNonIncrementalFallback()
-
-    yield* dieOnUnknownTools(rawContent, toolNames)
 
     // Resolve the generated tool calls
     const toolResults = yield* resolveToolCalls(
@@ -1314,12 +1308,10 @@ export const make: (params: {
       }
       const schema = Schema.NonEmptyArray(Response.StreamPart(Toolkit.empty))
       const decodeParts = Schema.decodeEffect(schema)
-      const toolNames = new Set<string>()
       return pipe(
         streamWithNonIncrementalFallback(),
         Stream.mapArrayEffect((parts) =>
-          dieOnUnknownTools(parts, toolNames).pipe(
-            Effect.flatMap(() => decodeParts(parts)),
+          decodeParts(parts).pipe(
             tracker ?
               Effect.tap((decodedParts) => {
                 for (const part of decodedParts) {
@@ -1365,12 +1357,10 @@ export const make: (params: {
       }
       const schema = Schema.NonEmptyArray(Response.StreamPart(Toolkit.empty))
       const decodeParts = Schema.decodeEffect(schema)
-      const toolNames = new Set<string>()
       return pipe(
         streamWithNonIncrementalFallback(),
         Stream.mapArrayEffect((parts) =>
-          dieOnUnknownTools(parts, toolNames).pipe(
-            Effect.flatMap(() => decodeParts(parts)),
+          decodeParts(parts).pipe(
             tracker ?
               Effect.tap((decodedParts) => {
                 for (const part of decodedParts) {
@@ -1475,15 +1465,13 @@ export const make: (params: {
       options.disableToolCallResolution === true ? makeToolkitWithEncodedParameters(toolkit) : toolkit
     ))
     const decodeParts = Schema.decodeEffect(ResponseSchema)
-    const toolNames = new Set(Object.values(toolkit.tools).map((tool) => tool.name))
 
     // If tool call resolution is disabled, return the response without
     // resolving the tool calls that were generated
     if (options.disableToolCallResolution === true) {
       return streamWithNonIncrementalFallback().pipe(
         Stream.mapArrayEffect((parts) =>
-          dieOnUnknownTools(parts, toolNames).pipe(
-            Effect.flatMap(() => decodeParts(parts)),
+          decodeParts(parts).pipe(
             tracker ?
               Effect.tap((decodedParts) => {
                 for (const part of decodedParts) {
@@ -1564,11 +1552,9 @@ export const make: (params: {
     yield* streamWithNonIncrementalFallback().pipe(
       Stream.runForEachArray(
         Effect.fnUntraced(function*(chunk) {
-          yield* dieOnUnknownTools(chunk, toolNames)
           const parts = yield* decodeParts(chunk)
-          const knownParts = parts as ReadonlyArray<Response.StreamPart<Tools>>
           if (tracker) {
-            for (const part of knownParts) {
+            for (const part of parts) {
               if (part.type === "response-metadata" && part.id) {
                 tracker.markParts(providerOptions.prompt.content, part.id)
               }
@@ -1577,7 +1563,7 @@ export const make: (params: {
           // Defer finish parts until all tool handlers complete. This guarantees
           // tool results are emitted before finish in streaming mode.
           const immediateParts: Array<Response.StreamPart<Tools>> = []
-          for (const part of knownParts) {
+          for (const part of parts) {
             if (part.type === "finish") {
               deferredFinishParts.push(part)
             } else {
@@ -2233,29 +2219,6 @@ const resolveToolCalls = <Tools extends Record<string, Tool.Any>>(
 // =============================================================================
 // Utilities
 // =============================================================================
-
-/**
- * Rejects provider responses containing tools outside the active toolkit.
- *
- * `Response` schemas intentionally accept unknown tools for standalone
- * decoding, but `LanguageModel` deliberately keeps its public response types
- * toolkit-specific. Unknown tools must therefore die before they enter the
- * typed response or tool-resolution pipeline.
- */
-const dieOnUnknownTools = (
-  parts: ReadonlyArray<Response.AnyPartEncoded>,
-  toolNames: ReadonlySet<string>
-): Effect.Effect<void> => {
-  for (const part of parts) {
-    if (
-      (part.type === "tool-call" || part.type === "tool-result") &&
-      !toolNames.has(part.name)
-    ) {
-      return Effect.die(`Unknown tool received by LanguageModel: ${part.name}`)
-    }
-  }
-  return Effect.void
-}
 
 const makeToolkitWithEncodedParameters = <Tools extends Record<string, Tool.Any>>(
   toolkit: Toolkit.WithHandler<Tools>

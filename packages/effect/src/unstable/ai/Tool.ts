@@ -919,15 +919,6 @@ export type ResultEncodingServices<T> = T extends Tool<
   : never
 
 /**
- * A utility type to extract the services required to encode the results of all
- * tools in a record.
- *
- * @category utility types
- * @since 4.0.0
- */
-export type ResultEncodingServicesFor<Tools extends Record<string, Any>> = ResultEncodingServices<Tools[keyof Tools]>
-
-/**
  * A utility type to extract the requirements needed to decode the result of
  * a `Tool` call.
  *
@@ -940,15 +931,6 @@ export type ResultDecodingServices<T> = T extends Tool<
   infer _Requirements
 > ? _Config["success"]["DecodingServices"] | _Config["failure"]["DecodingServices"]
   : never
-
-/**
- * A utility type to extract the services required to decode the results of all
- * tools in a record.
- *
- * @category utility types
- * @since 4.0.0
- */
-export type ResultDecodingServicesFor<Tools extends Record<string, Any>> = ResultDecodingServices<Tools[keyof Tools]>
 
 /**
  * Represents an `Tool` that has been implemented within the application.
