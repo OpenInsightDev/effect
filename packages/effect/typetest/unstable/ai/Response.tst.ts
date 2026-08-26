@@ -35,4 +35,12 @@ describe("Response", () => {
     expect<Response.AnyToolResultPart>().type.toBeAssignableTo<Schema.Schema.Type<typeof part>>()
     expect<Response.AnyToolCallPart>().type.toBeAssignableTo<Schema.Schema.Type<typeof streamPart>>()
   })
+
+  it("provides toolkit-specific tool part views with unrestricted fallbacks", () => {
+    expect<Response.ToolCallParts<Tools>>().type.toBeAssignableTo<Response.ToolCallPartsView<Tools>>()
+    expect<Response.AnyToolCallPart>().type.toBeAssignableTo<Response.ToolCallPartsView<Tools>>()
+    expect<Response.ToolCallParts<Tools, true>>().type.toBeAssignableTo<Response.ToolCallPartsView<Tools, true>>()
+    expect<Response.ToolResultParts<Tools>>().type.toBeAssignableTo<Response.ToolResultPartsView<Tools>>()
+    expect<Response.AnyToolResultPart>().type.toBeAssignableTo<Response.ToolResultPartsView<Tools>>()
+  })
 })

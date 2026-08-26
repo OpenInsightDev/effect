@@ -545,6 +545,24 @@ export type ToolCallParts<
 }[keyof Tools]
 
 /**
+ * Union type for tool call parts that also accepts tools outside the provided
+ * toolkit.
+ *
+ * **When to use**
+ *
+ * Use when a tool call may refer to a tool that is not known by the current
+ * toolkit.
+ *
+ * @see {@link ToolCallParts} for toolkit-specific tool call parts.
+ * @category utility types
+ * @since 4.0.0
+ */
+export type ToolCallPartsView<
+  Tools extends Record<string, Tool.Any>,
+  EncodedParameters extends boolean = false
+> = ToolCallParts<Tools, EncodedParameters> | AnyToolCallPart
+
+/**
  * Utility type that extracts tool result parts from a set of tools.
  *
  * @category utility types
@@ -555,6 +573,23 @@ export type ToolResultParts<Tools extends Record<string, Tool.Any>> = {
     ? ToolResultPart<Name, Tool.Success<Tools[Name]>, Tool.FailureResult<Tools[Name]>>
     : never
 }[keyof Tools]
+
+/**
+ * Union type for tool result parts that also accepts tools outside the provided
+ * toolkit.
+ *
+ * **When to use**
+ *
+ * Use when a tool result may refer to a tool that is not known by the current
+ * toolkit.
+ *
+ * @see {@link ToolResultParts} for toolkit-specific tool result parts.
+ * @category utility types
+ * @since 4.0.0
+ */
+export type ToolResultPartsView<Tools extends Record<string, Tool.Any>> =
+  | ToolResultParts<Tools>
+  | AnyToolResultPart
 
 // =============================================================================
 // Base Part
