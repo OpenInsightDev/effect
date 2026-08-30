@@ -1981,6 +1981,23 @@ export const isAnyToolResultPart = (u: unknown): u is AnyToolResultPart =>
   Predicate.hasProperty(u, AnyToolResultPartTypeId)
 
 /**
+ * Union of unrestricted tool call and tool result parts.
+ *
+ * @category models
+ * @since 4.0.0
+ */
+export type AnyToolPart = AnyToolCallPart | AnyToolResultPart
+
+/**
+ * Type guard to check if a value is an unrestricted tool part.
+ *
+ * @category guards
+ * @since 4.0.0
+ */
+export const isAnyToolPart = (u: unknown): u is AnyToolPart =>
+  Predicate.hasProperty(u, AnyToolCallPartTypeId) || Predicate.hasProperty(u, AnyToolResultPartTypeId)
+
+/**
  * Constructs a tool result part whose name and result are unrestricted.
  *
  * @category constructors

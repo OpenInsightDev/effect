@@ -39,6 +39,9 @@ describe("Response", () => {
       assert.isFalse(Response.isAnyToolResultPart(anyCall))
       assert.isTrue(Response.isAnyToolResultPart(anyResult))
       assert.isFalse(Response.isAnyToolResultPart(toolCall))
+      assert.isTrue(Response.isAnyToolPart(anyCall))
+      assert.isTrue(Response.isAnyToolPart(anyResult))
+      assert.isFalse(Response.isAnyToolPart(toolCall))
 
       const decodedCall = yield* Schema.decodeUnknownEffect(Response.AnyToolCallPart)({
         type: "tool-call",
