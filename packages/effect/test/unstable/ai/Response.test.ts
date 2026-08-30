@@ -1,4 +1,4 @@
-import { describe, it } from "@effect/vitest"
+import { assert, describe, it } from "@effect/vitest"
 import { deepStrictEqual } from "@effect/vitest/utils"
 import { Effect, Exit, Schema } from "effect"
 import { Response, Tool, Toolkit } from "effect/unstable/ai"
@@ -9,6 +9,53 @@ describe("Response", () => {
     success: Schema.Struct({ ok: Schema.Boolean })
   })
   const toolkit = Toolkit.make(KnownTool)
+
+  it.effect("distinguishes unrestricted tool parts at runtime", () =>
+    Effect.gen(function*() {
+      const toolCall = Response.toolCallPart({
+        id: "known",
+        name: "KnownTool",
+        params: { value: 1 },
+        providerExecuted: false
+      })
+      const anyCall = Response.anyToolCallPart({
+        id: "unknown",
+        name: "UnknownTool",
+        params: { value: 1 },
+        providerExecuted: false
+      })
+      const anyResult = Response.anyToolResultPart({
+        id: "unknown",
+        name: "UnknownTool",
+        isFailure: false,
+        result: { value: 1 },
+        encodedResult: { value: 1 },
+        providerExecuted: false,
+        preliminary: false
+      })
+
+      assert.isFalse(Response.isAnyToolCallPart(toolCall))
+      assert.isTrue(Response.isAnyToolCallPart(anyCall))
+      assert.isFalse(Response.isAnyToolResultPart(anyCall))
+      assert.isTrue(Response.isAnyToolResultPart(anyResult))
+      assert.isFalse(Response.isAnyToolResultPart(toolCall))
+
+      const decodedCall = yield* Schema.decodeUnknownEffect(Response.AnyToolCallPart)({
+        type: "tool-call",
+        id: "decoded",
+        name: "UnknownTool",
+        params: {}
+      })
+      const decodedResult = yield* Schema.decodeUnknownEffect(Response.AnyToolResultPart)({
+        type: "tool-result",
+        id: "decoded",
+        name: "UnknownTool",
+        isFailure: false,
+        result: {}
+      })
+      assert.isTrue(Response.isAnyToolCallPart(decodedCall))
+      assert.isTrue(Response.isAnyToolResultPart(decodedResult))
+    }))
 
   it.effect("decodes response metadata with omitted optional fields", () =>
     Effect.gen(function*() {
