@@ -1606,7 +1606,9 @@ export const toolCallPart = <const Name extends string, Params>(
  * @category models
  * @since 4.0.0
  */
-export type AnyToolCallPart = ToolCallPart<string, unknown> & {
+export type AnyToolCallPart = ToolCallPart<string, unknown>
+
+type RuntimeAnyToolCallPart = AnyToolCallPart & {
   readonly [AnyToolCallPartTypeId]: typeof AnyToolCallPartTypeId
 }
 
@@ -1616,7 +1618,8 @@ export type AnyToolCallPart = ToolCallPart<string, unknown> & {
  * @category guards
  * @since 4.0.0
  */
-export const isAnyToolCallPart = (u: unknown): u is AnyToolCallPart => Predicate.hasProperty(u, AnyToolCallPartTypeId)
+export const isAnyToolCallPart = (u: unknown): u is RuntimeAnyToolCallPart =>
+  Predicate.hasProperty(u, AnyToolCallPartTypeId)
 
 /**
  * Constructs a tool call part whose name and parameters are unrestricted.
@@ -1626,8 +1629,7 @@ export const isAnyToolCallPart = (u: unknown): u is AnyToolCallPart => Predicate
  */
 export const anyToolCallPart = (
   params: ConstructorParams<ToolCallPart<string, unknown>>
-): AnyToolCallPart => ({
-  ...makePart("tool-call", params),
+): AnyToolCallPart => Object.assign(makePart("tool-call", params), {
   [AnyToolCallPartTypeId]: AnyToolCallPartTypeId
 })
 
@@ -1647,7 +1649,9 @@ export const AnyToolCallPart: Schema.Codec<AnyToolCallPart, ToolCallPartEncoded>
     providerExecuted: Schema.Boolean,
     metadata: ProviderMetadata,
     [PartTypeId]: Schema.Literal(PartTypeId),
-    [AnyToolCallPartTypeId]: Schema.Literal(AnyToolCallPartTypeId)
+    [AnyToolCallPartTypeId]: Schema.Literal(AnyToolCallPartTypeId).pipe(
+      Schema.withDecodingDefaultKey(Effect.succeed(AnyToolCallPartTypeId), { encodingStrategy: "omit" })
+    )
   })
   const Encoded = Schema.Struct({
     type: Schema.Literal("tool-call"),
@@ -1663,7 +1667,6 @@ export const AnyToolCallPart: Schema.Codec<AnyToolCallPart, ToolCallPartEncoded>
       decode: (encoded) => ({
         ...encoded,
         [PartTypeId]: PartTypeId,
-        [AnyToolCallPartTypeId]: AnyToolCallPartTypeId,
         providerExecuted: encoded.providerExecuted ?? false,
         metadata: encoded.metadata ?? {}
       }),
@@ -1967,7 +1970,9 @@ export const toolResultPart = <const Params extends ConstructorParams<ToolResult
  * @category models
  * @since 4.0.0
  */
-export type AnyToolResultPart = ToolResultPart<string, unknown, unknown> & {
+export type AnyToolResultPart = ToolResultPart<string, unknown, unknown>
+
+type RuntimeAnyToolResultPart = AnyToolResultPart & {
   readonly [AnyToolResultPartTypeId]: typeof AnyToolResultPartTypeId
 }
 
@@ -1977,7 +1982,7 @@ export type AnyToolResultPart = ToolResultPart<string, unknown, unknown> & {
  * @category guards
  * @since 4.0.0
  */
-export const isAnyToolResultPart = (u: unknown): u is AnyToolResultPart =>
+export const isAnyToolResultPart = (u: unknown): u is RuntimeAnyToolResultPart =>
   Predicate.hasProperty(u, AnyToolResultPartTypeId)
 
 /**
@@ -1988,13 +1993,15 @@ export const isAnyToolResultPart = (u: unknown): u is AnyToolResultPart =>
  */
 export type AnyToolPart = AnyToolCallPart | AnyToolResultPart
 
+type RuntimeAnyToolPart = RuntimeAnyToolCallPart | RuntimeAnyToolResultPart
+
 /**
  * Type guard to check if a value is an unrestricted tool part.
  *
  * @category guards
  * @since 4.0.0
  */
-export const isAnyToolPart = (u: unknown): u is AnyToolPart =>
+export const isAnyToolPart = (u: unknown): u is RuntimeAnyToolPart =>
   Predicate.hasProperty(u, AnyToolCallPartTypeId) || Predicate.hasProperty(u, AnyToolResultPartTypeId)
 
 /**
@@ -2005,11 +2012,9 @@ export const isAnyToolPart = (u: unknown): u is AnyToolPart =>
  */
 export const anyToolResultPart = <const Params extends ConstructorParams<ToolResultPart<string, unknown, unknown>>>(
   params: Params
-): AnyToolResultPart =>
-  ({
-    ...toolResultPart(params),
-    [AnyToolResultPartTypeId]: AnyToolResultPartTypeId
-  }) as AnyToolResultPart
+): AnyToolResultPart => Object.assign(toolResultPart(params), {
+  [AnyToolResultPartTypeId]: AnyToolResultPartTypeId
+})
 
 /**
  * Schema for a tool result whose name and result are not restricted by a
@@ -2028,7 +2033,9 @@ export const AnyToolResultPart: Schema.Codec<AnyToolResultPart, ToolResultPartEn
   const Decoded = Schema.Struct({
     ...Common,
     [PartTypeId]: Schema.Literal(PartTypeId),
-    [AnyToolResultPartTypeId]: Schema.Literal(AnyToolResultPartTypeId),
+    [AnyToolResultPartTypeId]: Schema.Literal(AnyToolResultPartTypeId).pipe(
+      Schema.withDecodingDefaultKey(Effect.succeed(AnyToolResultPartTypeId), { encodingStrategy: "omit" })
+    ),
     result: Schema.Unknown,
     providerExecuted: Schema.Boolean,
     metadata: ProviderMetadata,
@@ -2048,7 +2055,6 @@ export const AnyToolResultPart: Schema.Codec<AnyToolResultPart, ToolResultPartEn
       decode: (encoded) => ({
         ...encoded,
         [PartTypeId]: PartTypeId,
-        [AnyToolResultPartTypeId]: AnyToolResultPartTypeId,
         providerExecuted: encoded.providerExecuted ?? false,
         metadata: encoded.metadata ?? {},
         encodedResult: encoded.result,

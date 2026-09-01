@@ -43,6 +43,15 @@ describe("Response", () => {
       assert.isTrue(Response.isAnyToolPart(anyResult))
       assert.isFalse(Response.isAnyToolPart(toolCall))
 
+      deepStrictEqual(yield* Schema.encodeEffect(Response.AnyToolCallPart)(toolCall), {
+        type: "tool-call",
+        id: "known",
+        name: "KnownTool",
+        params: { value: 1 },
+        providerExecuted: false,
+        metadata: {}
+      })
+
       const decodedCall = yield* Schema.decodeUnknownEffect(Response.AnyToolCallPart)({
         type: "tool-call",
         id: "decoded",

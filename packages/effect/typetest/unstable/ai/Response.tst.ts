@@ -23,6 +23,11 @@ describe("Response", () => {
     expect<Response.AnyToolResultPart>().type.not.toBeAssignableTo<Response.StreamPart<Tools>>()
   })
 
+  it("keeps unrestricted tool parts structurally compatible with native tool parts", () => {
+    expect<Response.AnyToolCallPart>().type.toBe<Response.ToolCallPart<string, unknown>>()
+    expect<Response.AnyToolResultPart>().type.toBe<Response.ToolResultPart<string, unknown, unknown>>()
+  })
+
   it("adds unrestricted tools only to any response types", () => {
     const allParts = Response.AllPartsView(toolkit)
     const part = Response.PartView(toolkit)
